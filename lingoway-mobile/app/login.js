@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Alert, StyleSheet } from 'react-native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const router = useRouter();
 
   const handleLogin = async () => {
     try {
-      const res = await axios.post('http://<YOUR_PC_IP>:8080/api/users/login', {
+      const res = await axios.post('http://192.168.0.7:8080/api/users/login', {
         email, password
       });
-      Alert.alert(`환영합니다, ${res.data.name}님`);
-      // TODO: JWT 저장 및 인증 페이지 이동
+
+      const token = res.data.token;
+      await AsyncStorage.setItem('authToken', token);
+
+      router.replace('/home'); // 로그인 후 홈으로 이동
     } catch (e) {
       Alert.alert('에러', e.response?.data?.message || '로그인 실패');
     }

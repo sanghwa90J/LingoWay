@@ -1,5 +1,6 @@
 package com.lingoway.lingoway.user.service;
 
+import com.lingoway.lingoway.security.JwtTokenProvider;
 import com.lingoway.lingoway.user.dto.*;
 import com.lingoway.lingoway.user.entity.User;
 import com.lingoway.lingoway.user.repository.UserRepository;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider; // ✅ 추가
 
     public UserResponse register(UserRegisterRequest request) {
         User user = User.builder()
@@ -28,15 +30,16 @@ public class UserService {
         return toResponse(saved);
     }
 
-    public UserResponse login(UserLoginRequest request) {
+    public TokenResponse  login(UserLoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
+        String token = jwtTokenProvider.createToken(user.getEmail()); // ✅ JWT 생성
 
-        return toResponse(user); // 여기서 실제로는 JWT 발급 필요
+        return new TokenResponse(token); // ✅ TokenResponse 리턴
     }
 
     public UserResponse toResponse(User user) {
@@ -46,5 +49,17 @@ public class UserService {
                 .name(user.getName())
                 .role(user.getRole())
                 .build();
+    }
+
+    public UserResponse getCurrentUserByToken(String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        String email = jwtTokenProvider.getSubject(token); // ✅ 토큰에서 이메일 추출
+        return getCurrentUser(email);
+    }
+
+    public UserResponse getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        return toResponse(user);
     }
 }

@@ -11,7 +11,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     try {
-      await axios.post('http://<YOUR_PC_IP>:8080/api/users/register', {
+      await axios.post('http://192.168.0.7:8080/api/users/register', {
         email, password, name,
       });
       Alert.alert('회원가입 성공');
